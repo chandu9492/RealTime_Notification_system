@@ -1,10 +1,13 @@
 package com.example.notifications.controller;
 
+import com.example.notifications.NotificationProducer;
+import com.example.notifications.NotificationPushService;
 import com.example.notifications.entity.Notification;
 import com.example.notifications.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -15,6 +18,12 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private NotificationProducer producer;
+
+    @Autowired
+    private NotificationPushService pushService;
+
     @PostMapping("/send")
     public ResponseEntity<String> sendNotification(@RequestBody Notification notification) {
         notificationService.sendNotification(
@@ -22,9 +31,10 @@ public class NotificationController {
                 notification.getMessage(),
                 notification.getSender(),
                 notification.getType(),
-                notification.getLink()
+                notification.getLink(),
+                notification.getCategory(),
+                notification.getKind()
         );
-
         return ResponseEntity.ok("Notification sent");
     }
 
@@ -43,9 +53,30 @@ public class NotificationController {
         notificationService.markAsRead(id);
         return ResponseEntity.ok("Notification marked as read");
     }
+
     @GetMapping("/unread-count/{receiver}")
     public ResponseEntity<Long> getUnreadCount(@PathVariable String receiver) {
         return ResponseEntity.ok(notificationService.getUnreadCount(receiver));
+    }
+
+    @GetMapping("/isOnline/{username}")
+    public boolean isOnline(@PathVariable String username){
+        return pushService.isOnline(username);
+    }
+
+    @GetMapping("/subscribe/{username}")
+    public SseEmitter subscribe(@PathVariable String username) {
+        return pushService.subscribe(username);
+    }
+
+    @GetMapping("/receive/{userId}")
+    public SseEmitter receive(@PathVariable String userId) {
+        return pushService.subscribe(userId); // Only unread + live messages
+    }
+
+    @GetMapping("/unSubscribe/{username}")
+    public String unSubscribe(@PathVariable String username){
+        return pushService.unSubscribe(username);
     }
 
 }

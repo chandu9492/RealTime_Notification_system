@@ -1,8 +1,13 @@
 package com.example.notifications.service;
+import org.springframework.cache.annotation.Cacheable;
+import java.time.LocalDateTime;
 
+import com.example.notifications.NotificationProducer;
 import com.example.notifications.entity.Notification;
 import com.example.notifications.repository.NotificationRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,35 +16,55 @@ import java.util.List;
 public class NotificationService {
 
     @Autowired
-    private NotificationRepository notificationRepository;
+    private NotificationRepository repository;
 
-    public void sendNotification(String receiver, String message, String sender, String type, String link) {
+    @Autowired
+    private NotificationProducer producer;
+
+    public void sendNotification(String receiver, String message, String sender, String type, String link,String category,String kind) {
         Notification notification = Notification.builder()
                 .receiver(receiver)
                 .message(message)
                 .sender(sender)
                 .type(type)
                 .link(link)
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .category(category)
+                .kind(kind)
                 .build();
-        notificationRepository.save(notification);
+
+        producer.sendNotification(notification);
     }
 
+    @Cacheable(value = "unreadNotifications", key = "#receiver")
     public List<Notification> getUnreadNotifications(String receiver) {
-        return notificationRepository.findByReceiverAndReadFalse(receiver);
+        return repository.findByReceiverAndReadFalseOrderByCreatedAtDesc(receiver);
     }
 
+    @Cacheable(value = "getAllNotifications", key = "#receiver")
     public List<Notification> getAllNotifications(String receiver) {
-        return notificationRepository.findByReceiverOrderByCreatedAtDesc(receiver);
+        return repository.findByReceiverOrderByCreatedAtDesc(receiver);
     }
 
     public void markAsRead(Long id) {
-        Notification n = notificationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not Found"));
-        n.setRead(true);
-        notificationRepository.save(n);
-    }
-    public long getUnreadCount(String receiver) {
-        return notificationRepository.countByReceiverAndReadFalse(receiver);
+        repository.findById(id).ifPresent(notification -> {
+            notification.setRead(true);
+            repository.save(notification);
+
+            // Invalidate cache when notification is marked as read
+            String receiver = notification.getReceiver();
+            evictCache(receiver);
+        });
     }
 
+    @Cacheable(value = "unreadCount", key = "#receiver")
+    public Long getUnreadCount(String receiver) {
+        return repository.countByReceiverAndReadFalse(receiver);
+    }
+
+    @CacheEvict(value = {"unreadNotifications", "allNotifications", "unreadCount"}, key = "#receiver")
+    public void evictCache(String receiver) {
+        // No body needed - Spring will handle the eviction
+    }
 }

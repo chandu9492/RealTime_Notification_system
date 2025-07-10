@@ -9,7 +9,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByReceiverAndReadFalse(String receiver);
 
-
+    List<Notification> findByReceiverAndReadFalseOrderByCreatedAtDesc(String receiver);
     List<Notification> findByReceiverOrderByCreatedAtDesc(String receiver);
     long countByReceiverAndReadFalse(String receiver);
 

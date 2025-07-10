@@ -9,15 +9,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-
+import java.io.Serializable;
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Table(schema="notification")
-public class Notification {
-
+public class Notification implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,6 +28,8 @@ public class Notification {
     private boolean read = false;
     private String sender;
     private String link;
+    private String category;
+    private String kind;
 
     private LocalDateTime createdAt;
 
