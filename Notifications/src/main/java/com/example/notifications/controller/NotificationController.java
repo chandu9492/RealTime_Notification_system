@@ -13,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/notifications")
+
 public class NotificationController {
 
     @Autowired
@@ -48,7 +49,7 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getAllNotifications(user));
     }
 
-    @PutMapping("/read/{id}")
+    @PostMapping("/read/{id}")
     public ResponseEntity<String> markRead(@PathVariable Long id) {
         notificationService.markAsRead(id);
         return ResponseEntity.ok("Notification marked as read");
