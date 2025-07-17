@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Notifications.iml" filepath="$PROJECT_DIR$/.idea/Notifications.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/RealTime_Notification_system.iml" filepath="$PROJECT_DIR$/.idea/RealTime_Notification_system.iml" />
     </modules>
   </component>
 </project>

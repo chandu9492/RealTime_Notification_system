@@ -31,6 +31,10 @@ public class Notification implements Serializable {
     private String category;
     private String kind;
 
+    private boolean stared=false;
+
+    private String subject;
+
     private LocalDateTime createdAt;
 
     @PrePersist

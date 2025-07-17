@@ -7,6 +7,7 @@ import com.example.notifications.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -24,6 +25,8 @@ public class NotificationController {
 
     @Autowired
     private NotificationPushService pushService;
+    @Autowired
+    RestTemplate restTemplate;
 
     @PostMapping("/send")
     public ResponseEntity<String> sendNotification(@RequestBody Notification notification) {
@@ -34,8 +37,25 @@ public class NotificationController {
                 notification.getType(),
                 notification.getLink(),
                 notification.getCategory(),
-                notification.getKind()
+                notification.getKind(),
+                notification.getSubject()
         );
+        return ResponseEntity.ok("Notification sent");
+    }
+    @PostMapping("/sendList")
+    public ResponseEntity<String> sendNotificationList(@RequestBody List<Notification> notifications) {
+        for(Notification notification:notifications) {
+            notificationService.sendNotification(
+                    notification.getReceiver(),
+                    notification.getMessage(),
+                    notification.getSender(),
+                    notification.getType(),
+                    notification.getLink(),
+                    notification.getCategory(),
+                    notification.getKind(),
+                    notification.getSubject()
+            );
+        }
         return ResponseEntity.ok("Notification sent");
     }
 

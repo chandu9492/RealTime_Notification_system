@@ -26,7 +26,7 @@ public class NotificationConsumer {
         notification.setRead(false);
 
 
-        repository.save(notification);
+
 
 
         pushService.sendNotificationToUser(notification.getReceiver(), notification);
