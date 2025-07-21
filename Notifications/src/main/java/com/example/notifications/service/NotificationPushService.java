@@ -1,6 +1,5 @@
-package com.example.notifications;
+package com.example.notifications.service;
 
-import com.example.notifications.entity.Notification;
 import com.example.notifications.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

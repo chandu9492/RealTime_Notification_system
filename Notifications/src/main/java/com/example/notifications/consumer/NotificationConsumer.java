@@ -1,7 +1,8 @@
-package com.example.notifications;
+package com.example.notifications.consumer;
 
 import com.example.notifications.entity.Notification;
 import com.example.notifications.repository.NotificationRepository;
+import com.example.notifications.service.NotificationPushService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;

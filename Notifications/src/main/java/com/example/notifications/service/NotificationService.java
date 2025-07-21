@@ -1,16 +1,18 @@
 package com.example.notifications.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import java.time.LocalDateTime;
 
-import com.example.notifications.NotificationProducer;
+import com.example.notifications.producer.NotificationProducer;
 import com.example.notifications.entity.Notification;
 import com.example.notifications.repository.NotificationRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -18,9 +20,14 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class NotificationService {
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
 
     @Autowired
     private NotificationRepository repository;
@@ -132,6 +139,29 @@ public class NotificationService {
         return repository.findByReceiverAndReadFalseOrderByCreatedAtDesc(receiver);
     }
 
+    public void startMessage(Long id){
+        repository.findById(id).ifPresent(notification -> {
+            notification.setStared(true);
+            repository.save(notification);
+            String receiver = notification.getReceiver();
+            evictCache(receiver);
+        });
+    }
+
+    @Transactional
+    public boolean deleteMessage(Long id) {
+        Optional<Notification> optional = repository.findById(id);
+        if (optional.isPresent()) {
+            Notification notification = optional.get();
+            repository.deleteById(id);
+            evictCache(notification.getReceiver());
+            return true;
+        }
+        return false;
+    }
+
+
+
     @Cacheable(value = "getAllNotifications", key = "#receiver")
     public List<Notification> getAllNotifications(String receiver) {
         return repository.findByReceiverOrderByCreatedAtDesc(receiver);
@@ -151,8 +181,12 @@ public class NotificationService {
         return repository.countByReceiverAndReadFalse(receiver);
     }
 
-    @CacheEvict(value = {"unreadNotifications", "allNotifications", "unreadCount"}, key = "#receiver")
+    @CacheEvict(value = {"unreadNotifications", "getAllNotifications", "unreadCount"}, key = "#receiver")
     public void evictCache(String receiver) {
-        // No body needed - Spring will handle the eviction
+        redisTemplate.delete("unreadNotifications::" + receiver);
+        redisTemplate.delete("getAllNotifications::" + receiver);
+        redisTemplate.delete("unreadCount::" + receiver);
+        System.out.println("Deleted Redis cache for receiver: " + receiver);
     }
+
 }

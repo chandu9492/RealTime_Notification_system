@@ -1,7 +1,7 @@
 package com.example.notifications.controller;
 
-import com.example.notifications.NotificationProducer;
-import com.example.notifications.NotificationPushService;
+import com.example.notifications.producer.NotificationProducer;
+import com.example.notifications.service.NotificationPushService;
 import com.example.notifications.entity.Notification;
 import com.example.notifications.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +62,18 @@ public class NotificationController {
     @GetMapping("/unread/{user}")
     public ResponseEntity<List<Notification>> getUnread(@PathVariable String user) {
         return ResponseEntity.ok(notificationService.getUnreadNotifications(user));
+    }
+
+    @PutMapping("/stared/{messageId}")
+    public String Stared(@PathVariable Long messageId){
+        notificationService.startMessage(messageId);
+        return "done";
+    }
+
+    @DeleteMapping("/delete/{messageId}")
+    public String delete(@PathVariable Long messageId){
+        notificationService.deleteMessage(messageId);
+        return "done";
     }
 
     @GetMapping("/all/{user}")

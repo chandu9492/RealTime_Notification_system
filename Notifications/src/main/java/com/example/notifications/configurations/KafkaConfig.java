@@ -1,4 +1,4 @@
-package com.example.notifications;
+package com.example.notifications.configurations;
 
 import com.example.notifications.entity.Notification;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
