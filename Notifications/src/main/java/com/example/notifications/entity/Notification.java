@@ -15,7 +15,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(schema="notification")
+@Table(name = "notification_table",schema="notification")
 public class Notification implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
