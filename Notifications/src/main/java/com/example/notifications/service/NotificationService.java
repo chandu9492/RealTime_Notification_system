@@ -147,6 +147,14 @@ public class NotificationService {
             evictCache(receiver);
         });
     }
+    public void unStartMessage(Long id){
+        repository.findById(id).ifPresent(notification -> {
+            notification.setStared(false);
+            repository.save(notification);
+            String receiver = notification.getReceiver();
+            evictCache(receiver);
+        });
+    }
 
     @Transactional
     public boolean deleteMessage(Long id) {

@@ -69,6 +69,11 @@ public class NotificationController {
         notificationService.startMessage(messageId);
         return "done";
     }
+    @PutMapping("/unstared/{messageId}")
+    public String unStared(@PathVariable Long messageId){
+        notificationService.unStartMessage(messageId);
+        return "done";
+    }
 
     @DeleteMapping("/delete/{messageId}")
     public String delete(@PathVariable Long messageId){
