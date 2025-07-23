@@ -15,6 +15,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -28,7 +29,6 @@ public class NotificationService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-
     @Autowired
     private NotificationRepository repository;
 
@@ -38,7 +38,7 @@ public class NotificationService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public void sendNotification(String receiver, String message, String sender, String type, String link, String category, String kind,String Subject) {
+    public void sendNotification(String receiver, String message, String sender, String type, String link, String category, String kind, String subject) {
         if ("team".equalsIgnoreCase(category)) {
             String url = "http://localhost:8090/api/team/employee/" + receiver;
 
@@ -46,7 +46,7 @@ public class NotificationService {
                     url,
                     HttpMethod.GET,
                     null,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {}
             );
 
             List<Map<String, Object>> teams = response.getBody();
@@ -68,12 +68,11 @@ public class NotificationService {
                             .createdAt(LocalDateTime.now())
                             .category(category)
                             .kind(kind)
-                            .subject(Subject)
+                            .subject(subject)
                             .stared(false)
                             .build();
 
-                    repository.save(notification);
-                    producer.sendNotification(notification);
+                    sendNotificationAsync(notification);
                 }
             }
         } else if ("department".equalsIgnoreCase(category)) {
@@ -83,7 +82,7 @@ public class NotificationService {
                     url,
                     HttpMethod.GET,
                     null,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
             );
 
             Map<String, Object> department = response.getBody();
@@ -104,16 +103,14 @@ public class NotificationService {
                             .createdAt(LocalDateTime.now())
                             .category(category)
                             .kind(kind)
+                            .subject(subject)
                             .stared(false)
-                            .subject(Subject)
                             .build();
 
-                    repository.save(notification);
-                    producer.sendNotification(notification);
+                    sendNotificationAsync(notification);
                 }
             }
         } else {
-
             Notification notification = Notification.builder()
                     .receiver(receiver)
                     .message(message)
@@ -124,27 +121,38 @@ public class NotificationService {
                     .createdAt(LocalDateTime.now())
                     .category(category)
                     .kind(kind)
+                    .subject(subject)
                     .stared(false)
-                    .subject(Subject)
                     .build();
 
-            repository.save(notification);
-            producer.sendNotification(notification);
+            sendNotificationAsync(notification);
         }
     }
 
+    @Async("notificationExecutor")
+    public void sendNotificationAsync(Notification notification) {
+        repository.save(notification);
+        producer.sendNotification(notification);
+    }
 
     @Cacheable(value = "unreadNotifications", key = "#receiver")
     public List<Notification> getUnreadNotifications(String receiver) {
         return repository.findByReceiverAndReadFalseOrderByCreatedAtDesc(receiver);
     }
 
-    public void startMessage(Long id){
+    public void startMessage(Long id) {
         repository.findById(id).ifPresent(notification -> {
             notification.setStared(true);
             repository.save(notification);
-            String receiver = notification.getReceiver();
-            evictCache(receiver);
+            evictCache(notification.getReceiver());
+        });
+    }
+
+    public void unStartMessage(Long id) {
+        repository.findById(id).ifPresent(notification -> {
+            notification.setStared(false);
+            repository.save(notification);
+            evictCache(notification.getReceiver());
         });
     }
 
@@ -160,8 +168,6 @@ public class NotificationService {
         return false;
     }
 
-
-
     @Cacheable(value = "getAllNotifications", key = "#receiver")
     public List<Notification> getAllNotifications(String receiver) {
         return repository.findByReceiverOrderByCreatedAtDesc(receiver);
@@ -171,8 +177,7 @@ public class NotificationService {
         repository.findById(id).ifPresent(notification -> {
             notification.setRead(true);
             repository.save(notification);
-            String receiver = notification.getReceiver();
-            evictCache(receiver);
+            evictCache(notification.getReceiver());
         });
     }
 
@@ -188,5 +193,4 @@ public class NotificationService {
         redisTemplate.delete("unreadCount::" + receiver);
         System.out.println("Deleted Redis cache for receiver: " + receiver);
     }
-
 }
