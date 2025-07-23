@@ -1,6 +1,8 @@
 package com.example.notifications.configurations;
 
 import com.example.notifications.entity.Notification;
+import org.springframework.beans.factory.annotation.Value;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -20,7 +22,8 @@ import java.util.Map;
 @EnableKafka
 public class KafkaConfig {
 
-    private final String BOOTSTRAP_SERVERS = "localhost:9092";
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String BOOTSTRAP_SERVERS;
 
 
     @Bean
@@ -37,7 +40,7 @@ public class KafkaConfig {
         return new KafkaTemplate<>(producerFactory());
     }
 
-    // ✅ Kafka Consumer Configuration
+    
     @Bean
     public ConsumerFactory<String, Notification> consumerFactory() {
         JsonDeserializer<Notification> deserializer = new JsonDeserializer<>(Notification.class);
@@ -47,6 +50,7 @@ public class KafkaConfig {
 
         Map<String, Object> config = new HashMap<>();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
+        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
@@ -58,6 +62,7 @@ public class KafkaConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Notification> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Notification> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+        factory.setConcurrency(3);
         return factory;
     }
 }
