@@ -1,0 +1,16 @@
+package com.hrms.project.repository;
+
+
+import com.hrms.project.entity.Team;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+
+import java.util.Optional;
+
+@Repository
+public interface TeamRepository extends JpaRepository<Team, String> {
+   // Optional<Team> findByTeamName(String workingTeamName);
+
+
+}
