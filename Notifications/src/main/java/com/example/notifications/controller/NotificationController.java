@@ -111,5 +111,9 @@ public class NotificationController {
     public String unSubscribe(@PathVariable String username){
         return pushService.unSubscribe(username);
     }
+    @GetMapping("/deletedMessages")
+    public List<Notification> getDeletedNotifications() {
+        return notificationService.deletedMessage();
+    }
 
 }

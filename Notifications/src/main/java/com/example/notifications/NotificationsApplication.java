@@ -6,7 +6,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @EnableCaching
-@SpringBootApplicationgit
+@SpringBootApplication
 @EnableAsync
 public class NotificationsApplication {
 

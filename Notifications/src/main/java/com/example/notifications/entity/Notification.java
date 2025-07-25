@@ -35,6 +35,11 @@ public class Notification implements Serializable {
 
     private String subject;
 
+    @Column(nullable = false)
+    private Boolean deleted = false;
+
+
+
     private LocalDateTime createdAt;
 
     @PrePersist

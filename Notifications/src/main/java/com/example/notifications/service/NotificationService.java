@@ -70,6 +70,7 @@ public class NotificationService {
                             .kind(kind)
                             .subject(subject)
                             .stared(false)
+                            .deleted(false)
                             .build();
 
                     sendNotificationAsync(notification);
@@ -105,6 +106,7 @@ public class NotificationService {
                             .kind(kind)
                             .subject(subject)
                             .stared(false)
+                            .deleted(false)
                             .build();
 
                     sendNotificationAsync(notification);
@@ -123,6 +125,7 @@ public class NotificationService {
                     .kind(kind)
                     .subject(subject)
                     .stared(false)
+                    .deleted(false)
                     .build();
 
             sendNotificationAsync(notification);
@@ -158,14 +161,13 @@ public class NotificationService {
 
     @Transactional
     public boolean deleteMessage(Long id) {
-        Optional<Notification> optional = repository.findById(id);
-        if (optional.isPresent()) {
-            Notification notification = optional.get();
-            repository.deleteById(id);
-            evictCache(notification.getReceiver());
-            return true;
-        }
-        return false;
+        Notification notification = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        notification.setDeleted(true);
+        repository.save(notification);
+
+        return true;
     }
 
     @Cacheable(value = "getAllNotifications", key = "#receiver")
@@ -192,5 +194,9 @@ public class NotificationService {
         redisTemplate.delete("getAllNotifications::" + receiver);
         redisTemplate.delete("unreadCount::" + receiver);
         System.out.println("Deleted Redis cache for receiver: " + receiver);
+    }
+
+    public List<Notification> deletedMessage() {
+        return repository.findByDeletedTrue();
     }
 }

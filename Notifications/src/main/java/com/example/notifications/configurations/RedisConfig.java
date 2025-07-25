@@ -1,7 +1,5 @@
 package com.example.notifications.configurations;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,8 +7,6 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisPassword;
-import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -33,36 +29,15 @@ import java.time.Duration;
 @EnableCaching
 public class RedisConfig {
 
-    private final RedisProperties redisProperties;
-
     @Bean
     public EventListener eventListener(ObjectMapper objectMapper, NotificationPushService notificationPushService) {
         return new EventListener(objectMapper, notificationPushService);
     }
 
-
-    public RedisConfig(RedisProperties redisProperties) {
-        this.redisProperties = redisProperties;
-    }
-    
     @Bean
     public LettuceConnectionFactory redisConnectionFactory() {
-        RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration()
-                .master(redisProperties.getSentinel().getMaster());
-
-        for (String s : redisProperties.getSentinel().getNodes()) {
-            String[] parts = s.split(":");
-            if (parts.length != 2) {
-                throw new IllegalArgumentException("Invalid sentinel node: " + s);
-            }
-            sentinelConfig.sentinel(parts[0], Integer.parseInt(parts[1]));
-            // log.info("Adding sentinel node: {}", s);
-        }
-
-        // This sets the password for Redis master
-        sentinelConfig.setPassword(RedisPassword.of(redisProperties.getPassword()));
-
-        return new LettuceConnectionFactory(sentinelConfig);
+        // Connect to Redis on localhost:6379 (no Sentinel)
+        return new LettuceConnectionFactory("localhost", 6379);
     }
 
     @Bean
@@ -72,8 +47,6 @@ public class RedisConfig {
                         .entryTtl(Duration.ofMinutes(5)))
                 .build();
     }
-
-
 
     @Bean
     public RedisTemplate<String, Notification> redisTemplate(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
@@ -101,10 +74,8 @@ public class RedisConfig {
         return template;
     }
 
-
-
     @Bean
-    public MessageListenerAdapter messageListener(EventListener eventListener) { 
+    public MessageListenerAdapter messageListener(EventListener eventListener) {
         return new MessageListenerAdapter(eventListener);
     }
 
@@ -119,14 +90,12 @@ public class RedisConfig {
         return executor;
     }
 
-
     @Bean
     public RedisMessageListenerContainer redisContainer(RedisConnectionFactory connectionFactory, MessageListenerAdapter messageListener) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.setTaskExecutor(taskExecutor());
         container.addMessageListener(messageListener, new ChannelTopic("notifications:all"));
-        
         return container;
     }
 
@@ -137,6 +106,4 @@ public class RedisConfig {
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return objectMapper;
     }
-
-
 }

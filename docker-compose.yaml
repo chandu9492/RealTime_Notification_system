@@ -1,275 +1,52 @@
-version: '3'
+version: '3.8'
+
 services:
 
-  kafka-controller-1:
-    container_name: kafka-controller-1
-    image: confluentinc/cp-kafka:7.4.0
-    ports:
-      - "9091:9091"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
     environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: controller
-      KAFKA_LISTENERS: CONTROLLER://kafka-controller-1:9091
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-controller-1:9091
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-      KAFKA_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-    env_file:
-      - .env
-    volumes:
-      - ./kafka/controller.properties:/kafka/kafka.properties
-      - kafka-controller-1-logs:/var/lib/kafka/data
-    command: >
-      bash -c "
-        kafka-storage format --ignore-formatted --cluster-id $KAFKA_CLUSTER_ID --config /kafka/kafka.properties &&
-        /etc/confluent/docker/run"
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
     networks:
       - app-network
 
-  kafka-broker-1:
-    container_name: kafka-broker-1
+  kafka:
     image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
     ports:
       - "9092:9092"
-      - "29092:29092"
     environment:
-      KAFKA_NODE_ID: 2
-      KAFKA_PROCESS_ROLES: broker
-      KAFKA_LISTENERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_INTERNAL://kafka-broker-1:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_INTERNAL://kafka-broker-1:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-controller-1:9091
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-      KAFKA_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-    env_file:
-      - .env
-    volumes:
-      - ./kafka/broker-1.properties:/kafka/kafka.properties
-      - kafka-broker-1-logs:/var/lib/kafka/data
-    depends_on:
-      - kafka-controller-1
-    command: >
-      bash -c "
-        kafka-storage format --ignore-formatted --cluster-id $KAFKA_CLUSTER_ID --config /kafka/kafka.properties &&
-        /etc/confluent/docker/run"
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - app-network
 
-  kafka-broker-2:
-    container_name: kafka-broker-2
-    image: confluentinc/cp-kafka:7.4.0
-    ports:
-      - "9093:9093"
-      - "29093:29093"
-    environment:
-      KAFKA_NODE_ID: 3
-      KAFKA_PROCESS_ROLES: broker
-      KAFKA_LISTENERS: PLAINTEXT://kafka-broker-2:9093,PLAINTEXT_INTERNAL://kafka-broker-2:29093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-2:9093,PLAINTEXT_INTERNAL://kafka-broker-2:29093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-controller-1:9091
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-    env_file:
-      - .env
-    volumes:
-      - ./kafka/broker-2.properties:/kafka/kafka.properties
-      - kafka-broker-2-logs:/var/lib/kafka/data
-    depends_on:
-      - kafka-controller-1
-    command: >
-      bash -c "
-        kafka-storage format --ignore-formatted --cluster-id $KAFKA_CLUSTER_ID --config /kafka/kafka.properties &&
-        /etc/confluent/docker/run"
-    networks:
-      - app-network
-
-  kafka-broker-3:
-    container_name: kafka-broker-3
-    image: confluentinc/cp-kafka:7.4.0
-    ports:
-      - "9094:9094"
-      - "29094:29094"
-    environment:
-      KAFKA_NODE_ID: 4
-      KAFKA_PROCESS_ROLES: broker
-      KAFKA_LISTENERS: PLAINTEXT://kafka-broker-3:9094,PLAINTEXT_INTERNAL://kafka-broker-3:29094
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-3:9094,PLAINTEXT_INTERNAL://kafka-broker-3:29094
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-controller-1:9091
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-    env_file:
-      - .env
-    volumes:
-      - ./kafka/broker-3.properties:/kafka/kafka.properties
-      - kafka-broker-3-logs:/var/lib/kafka/data
-    depends_on:
-      - kafka-controller-1
-    command: >
-      bash -c "
-        kafka-storage format --ignore-formatted --cluster-id $KAFKA_CLUSTER_ID --config /kafka/kafka.properties &&
-        /etc/confluent/docker/run"
-    networks:
-      - app-network
-  kafka-ui:
-    container_name: kafka-ui
-    image: provectuslabs/kafka-ui:latest
-    ports:
-      - 3000:8080
-    depends_on:
-      - kafka-broker-1
-      - kafka-broker-2
-      - kafka-broker-3
-    restart: always
-    environment:
-      KAFKA_CLUSTERS_0_NAME: kafka-local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
-
-    networks:
-      - app-network
-  redis-master:
-    container_name: redis-master
+  redis:
     image: redis:7.4-alpine
-    command: >
-      redis-server /data/redis.conf
-    volumes:
-      - redis-0:/data
-      - ./redis/redis-0/redis.conf:/data/redis.conf
+    container_name: redis
     ports:
       - "6379:6379"
     networks:
       - app-network
 
-  redis-slave1:
-    container_name: redis-slave1
-    image: redis:7.4-alpine
-    command: >
-      redis-server /data/redis.conf
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
     volumes:
-      - redis-1:/data
-      - ./redis/redis-1/redis.conf:/data/redis.conf
-    ports:
-      - "6380:6379"
-    depends_on:
-      - redis-master
-    networks:
-      - app-network
-
-  redis-slave2:
-    container_name: redis-slave2
-    image: redis:7.4-alpine
-    command: >
-      redis-server /data/redis.conf
-    volumes:
-      - redis-2:/data
-      - ./redis/redis-2/redis.conf:/data/redis.conf
-    ports:
-      - "6381:6379"
-    depends_on:
-      - redis-master
-    networks:
-      - app-network
-
-  sentinel-0:
-    container_name: sentinel-0
-    image: redis:7.4-alpine
-    command: >
-      redis-sentinel /data/Sentinel.conf
-    volumes:
-      - Sentinel-0:/data
-      - ./redis/Sentinel-0/Sentinel.conf:/data/Sentinel.conf
-    ports:
-      - "5000:5000"
-    depends_on:
-      - redis-master
-      - redis-slave1
-      - redis-slave2
-    networks:
-      - app-network
-
-  sentinel-1:
-    container_name: sentinel-1
-    image: redis:7.4-alpine
-    command: >
-      redis-sentinel /data/Sentinel.conf
-    volumes:
-      - Sentinel-1:/data
-      - ./redis/Sentinel-1/Sentinel.conf:/data/Sentinel.conf
-    ports:
-      - "5001:5000"
-    depends_on:
-      - redis-master
-      - redis-slave1
-      - redis-slave2
-    networks:
-      - app-network
-
-  sentinel-2:
-    container_name: sentinel-2
-    image: redis:7.4-alpine
-    command: >
-      redis-sentinel /data/Sentinel.conf
-    volumes:
-      - Sentinel-2:/data
-      - ./redis/Sentinel-2/Sentinel.conf:/data/Sentinel.conf
-    ports:
-      - "5002:5000"
-    depends_on:
-      - redis-master
-      - redis-slave1
-      - redis-slave2
-    networks:
-      - app-network
-
-
-  Notification:
-    container_name: Notification-kafka-pubsub
-    image: notification-kafka-pubsub:latest
-    build:
-      context: ./Notifications
-      dockerfile: Dockerfile
-    ports:
-      - "8085:8085"
-    depends_on:
-      - redis-master
-      - redis-slave1
-      - redis-slave2
-      - sentinel-0
-      - sentinel-1
-      - sentinel-2
-      - kafka-controller-1
-      - kafka-broker-1
-      - kafka-broker-2
-      - kafka-broker-3
-    networks:
-      - app-network
-  Employee-service:
-    container_name: Employee-service
-    image: employee-service:latest
-    build:
-      context: ./Employee_microservice
-      dockerfile: Dockerfile
-    ports:
-      - "8090:8090"
-    # depends_on:
-    #   - redis-master
-    #   - redis-slave1
-    #   - redis-slave2
-    #   - sentinel-0
-    #   - sentinel-1
-    #   - sentinel-2
-    #   - kafka-controller-1
-    #   - kafka-broker-1
-    #   - kafka-broker-2
-    #   - kafka-broker-3
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - app-network
 
@@ -278,13 +55,4 @@ networks:
     driver: bridge
 
 volumes:
-  redis-0:
-  redis-1:
-  redis-2:
-  Sentinel-0:
-  Sentinel-1:
-  Sentinel-2:
-  kafka-controller-1-logs:
-  kafka-broker-1-logs:
-  kafka-broker-2-logs:
-  kafka-broker-3-logs:
+  postgres-data:
