@@ -25,8 +25,7 @@ public class NotificationController {
 
     @Autowired
     private NotificationPushService pushService;
-    @Autowired
-    RestTemplate restTemplate;
+
 
     @PostMapping("/send")
     public ResponseEntity<String> sendNotification(@RequestBody Notification notification) {
@@ -104,7 +103,7 @@ public class NotificationController {
 
     @GetMapping("/receive/{userId}")
     public SseEmitter receive(@PathVariable String userId) {
-        return pushService.subscribe(userId); // Only unread + live messages
+        return pushService.subscribe(userId);
     }
 
     @GetMapping("/unSubscribe/{username}")

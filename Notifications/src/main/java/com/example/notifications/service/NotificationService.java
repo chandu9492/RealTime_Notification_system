@@ -1,5 +1,8 @@
 package com.example.notifications.service;
 
+import com.example.notifications.dtos.EmployeeDepartmentDTO;
+import com.example.notifications.dtos.EmployeeTeamResponse;
+import com.example.notifications.dtos.TeamResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -9,19 +12,17 @@ import com.example.notifications.producer.NotificationProducer;
 import com.example.notifications.entity.Notification;
 import com.example.notifications.repository.NotificationRepository;
 
+import com.example.notifications.clients.TeamClient;
+import com.example.notifications.clients.DepartmentClient;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class NotificationService {
@@ -36,27 +37,46 @@ public class NotificationService {
     private NotificationProducer producer;
 
     @Autowired
-    private RestTemplate restTemplate;
+    private TeamClient teamClient;
+
+    @Autowired
+    private DepartmentClient departmentClient;
 
     public void sendNotification(String receiver, String message, String sender, String type, String link, String category, String kind, String subject) {
         if ("team".equalsIgnoreCase(category)) {
-            String url = "http://localhost:8090/api/team/employee/" + receiver;
+            TeamResponse team = teamClient.getEmployeesInTeam(receiver);
 
-            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<List<Map<String, Object>>>() {}
-            );
+            if (team != null && team.getEmployees() != null) {
+                team.getEmployees().forEach(emp -> {
+                    String employeeId = emp.getEmployeeId();
 
-            List<Map<String, Object>> teams = response.getBody();
+                    Notification notification = Notification.builder()
+                            .receiver(employeeId)
+                            .message(message)
+                            .sender(sender)
+                            .type(type)
+                            .link(link)
+                            .read(false)
+                            .createdAt(LocalDateTime.now())
+                            .category(category)
+                            .kind(kind)
+                            .subject(subject)
+                            .stared(false)
+                            .deleted(false)
+                            .build();
 
-            if (teams != null && !teams.isEmpty()) {
-                Map<String, Object> team = teams.get(0);
-                List<Map<String, Object>> employees = (List<Map<String, Object>>) team.get("employees");
+                    sendNotificationAsync(notification);
+                });
+            }
 
-                for (Map<String, Object> emp : employees) {
-                    String employeeId = (String) emp.get("employeeId");
+        }if ("department".equalsIgnoreCase(category)) {
+            EmployeeDepartmentDTO department = departmentClient.getEmployeesInDepartment(receiver);
+            System.out.println(department);
+            if (department != null && department.getEmployeeList() != null) {
+
+                for (EmployeeTeamResponse emp : department.getEmployeeList()) {
+                    System.out.println("not enter into for loop");
+                    String employeeId = emp.getEmployeeId();
 
                     Notification notification = Notification.builder()
                             .receiver(employeeId)
@@ -76,43 +96,9 @@ public class NotificationService {
                     sendNotificationAsync(notification);
                 }
             }
-        } else if ("department".equalsIgnoreCase(category)) {
-            String url = "http://localhost:8090/api/department/" + receiver + "/employees";
+        }
 
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-
-            Map<String, Object> department = response.getBody();
-
-            if (department != null && department.containsKey("employeeList")) {
-                List<Map<String, Object>> employees = (List<Map<String, Object>>) department.get("employeeList");
-
-                for (Map<String, Object> emp : employees) {
-                    String employeeId = (String) emp.get("employeeId");
-
-                    Notification notification = Notification.builder()
-                            .receiver(employeeId)
-                            .message(message)
-                            .sender(sender)
-                            .type(type)
-                            .link(link)
-                            .read(false)
-                            .createdAt(LocalDateTime.now())
-                            .category(category)
-                            .kind(kind)
-                            .subject(subject)
-                            .stared(false)
-                            .deleted(false)
-                            .build();
-
-                    sendNotificationAsync(notification);
-                }
-            }
-        } else {
+        else {
             Notification notification = Notification.builder()
                     .receiver(receiver)
                     .message(message)

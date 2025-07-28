@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class NotificationPushService {
 
-    // Stores multiple emitters per user
+
     private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     @Autowired
