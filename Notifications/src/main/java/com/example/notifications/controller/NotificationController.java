@@ -1,11 +1,13 @@
 package com.example.notifications.controller;
 
 import com.example.notifications.producer.NotificationProducer;
+import com.example.notifications.service.EmailService;
 import com.example.notifications.service.NotificationPushService;
 import com.example.notifications.entity.Notification;
 import com.example.notifications.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.MessagingException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -25,7 +27,8 @@ public class NotificationController {
 
     @Autowired
     private NotificationPushService pushService;
-
+ @Autowired
+ private EmailService emailService;
 
     @PostMapping("/send")
     public ResponseEntity<String> sendNotification(@RequestBody Notification notification) {
@@ -93,26 +96,36 @@ public class NotificationController {
 
     @GetMapping("/isOnline/{username}")
     public boolean isOnline(@PathVariable String username){
+
         return pushService.isOnline(username);
     }
 
     @GetMapping("/subscribe/{username}")
     public SseEmitter subscribe(@PathVariable String username) {
+
         return pushService.subscribe(username);
     }
 
     @GetMapping("/receive/{userId}")
     public SseEmitter receive(@PathVariable String userId) {
+
         return pushService.subscribe(userId);
     }
 
     @GetMapping("/unSubscribe/{username}")
     public String unSubscribe(@PathVariable String username){
+
         return pushService.unSubscribe(username);
     }
     @GetMapping("/deletedMessages")
     public List<Notification> getDeletedNotifications() {
+
         return notificationService.deletedMessage();
     }
+    @GetMapping("/send")
+    public String sendMail(String recipient, String subject, String content) throws MessagingException {
 
+
+        return "Mail sent!";
+    }
 }

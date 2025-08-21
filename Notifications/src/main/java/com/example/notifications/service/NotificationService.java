@@ -3,9 +3,12 @@ package com.example.notifications.service;
 import com.example.notifications.dtos.EmployeeDepartmentDTO;
 import com.example.notifications.dtos.EmployeeTeamResponse;
 import com.example.notifications.dtos.TeamResponse;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 
 import com.example.notifications.producer.NotificationProducer;
@@ -18,6 +21,8 @@ import com.example.notifications.clients.DepartmentClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.messaging.MessagingException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -185,4 +190,5 @@ public class NotificationService {
     public List<Notification> deletedMessage() {
         return repository.findByDeletedTrue();
     }
+
 }

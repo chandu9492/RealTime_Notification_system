@@ -10,7 +10,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TeamResponse {
-
     private String teamId;
     private String teamName;
     private List<EmployeeTeamResponse> employees;
