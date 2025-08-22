@@ -40,7 +40,7 @@ public class EmailService {
                       <!-- Header -->
                       <tr>
                         <td style="background:#4CAF50; padding:20px; color:white; font-size:20px; font-weight:bold; text-align:center;">
-                        📢 Notification from ${sender}
+                         Notification from ${sender}
                         </td>
                       </tr>
             
@@ -114,9 +114,9 @@ public class EmailService {
             helper.setText(content, true);
 
             mailSender.send(message);
-            System.out.println("✅ Email sent successfully");
+            System.out.println("Email sent successfully");
         } catch (MessagingException e) {
-            throw new RuntimeException("❌ Failed to send email", e);
+            throw new RuntimeException("Failed to send email", e);
         }
     }
 
