@@ -7,7 +7,6 @@ import com.example.notifications.entity.Notification;
 import com.example.notifications.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.MessagingException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -15,7 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/api/notification")
 
 public class NotificationController {
 
@@ -121,11 +120,5 @@ public class NotificationController {
     public List<Notification> getDeletedNotifications() {
 
         return notificationService.deletedMessage();
-    }
-    @GetMapping("/send")
-    public String sendMail(String recipient, String subject, String content) throws MessagingException {
-
-
-        return "Mail sent!";
     }
 }

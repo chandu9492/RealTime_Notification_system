@@ -1,0 +1,62 @@
+
+replicaCount: 2
+
+microservice:
+  name: Notification
+  namespace: hrms
+  port: 8085
+
+
+image:
+  repository: koti21/notification
+  pullPolicy: IfNotPresent
+  tag: "v1"
+
+
+resources: 
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # Optional:
+  # targetMemoryUtilizationPercentage: 75
+
+livenessProbe:
+  path: "actuator/health/liveness"
+  initialDelaySeconds: 180
+  periodSeconds: 10
+
+readinessProbe:
+  path: "actuator/health/readiness"
+  initialDelaySeconds: 150
+  periodSeconds: 10
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30081
+
+gateway:
+  namespace: istio-ingress
+  name: gateway
+  hostname: "hrms.anasolconsultancyservices.com"
+httprouts:
+  hostnames: ["hrms.anasolconsultancyservices.com"]
+  path: "/api/notification"
+
+serviceAccount:
+  annotations:
+    example.com/annotation: "value"
+  rules:
+    - apiGroups: [""]
+      resources: ["pods"] 
+      verbs: ["get", "list", "watch"]
